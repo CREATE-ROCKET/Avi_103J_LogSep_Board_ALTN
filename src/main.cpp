@@ -244,18 +244,6 @@ void loop() {
       Log = false;
     }
   }
-  if (count_CAN >= 1000) {
-    CAN.sendData(0x120, Rot_Data, 6);
-    CAN.sendData(0x11a, Acc_Data, 6);
-    CAN.sendData(0x10a, Press_Data, 3);
-    count_CAN = 0;
-  }
-  if (Liftoff and !Liftoff_Prev) {
-    CAN.sendData(0x110, Send_Liftoff, 1);
-  }
-  if (Top and !Top_Prev) {
-    CAN.sendData(0x12a, Send_Top, 1);
-  }
   if (Serial.available()) {
     char cmd = Serial.read();
     Serial.println(cmd);
@@ -433,6 +421,18 @@ void loop() {
     digitalWrite(MIN1, LOW);
     digitalWrite(MIN2, LOW);
     digitalWrite(LED, LOW);
+  }
+  if (count_CAN >= 1000) {
+    CAN.sendData(0x120, Rot_Data, 6);
+    CAN.sendData(0x11a, Acc_Data, 6);
+    CAN.sendData(0x10a, Press_Data, 3);
+    count_CAN = 0;
+  }
+  if (Liftoff and !Liftoff_Prev) {
+    CAN.sendData(0x110, Send_Liftoff, 1);
+  }
+  if (Top and !Top_Prev) {
+    CAN.sendData(0x12a, Send_Top, 1);
   }
   Standby_Prev = Standby;
   Liftoff_Prev = Liftoff;
