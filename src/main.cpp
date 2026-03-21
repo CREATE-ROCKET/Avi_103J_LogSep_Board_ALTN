@@ -244,18 +244,6 @@ void loop() {
       Log = false;
     }
   }
-  if (count_CAN >= 200) {
-    CAN.sendData(0x120, Rot_Data, 6);
-    CAN.sendData(0x11a, Acc_Data, 6);
-    CAN.sendData(0x10a, Press_Data, 3);
-    count_CAN = 0;
-  }
-  if (Liftoff and !Liftoff_Prev) {
-    CAN.sendData(0x110, Send_Liftoff, 1);
-  }
-  if (Top and !Top_Prev) {
-    CAN.sendData(0x12a, Send_Top, 1);
-  }
   if (Serial.available()) {
     char cmd = Serial.read();
     Serial.println(cmd);
@@ -291,6 +279,8 @@ void loop() {
     }
     if (cmd == 'w') {
       timerAlarmDisable(timer);
+      flash.read(0x000, Flash_Read);
+      Flash_Address = Flash_Read[0] * 16777216 + Flash_Read[1] * 65536 + Flash_Read[2] * 256 + Flash_Read[3];
       for (uint32_t i = 0x100; i < Flash_Address; i += 0x100) {
         flash.read(i, Flash_Read);
         for (uint8_t j = 0; j <= 15; j++) {
@@ -338,7 +328,7 @@ void loop() {
         count_LED = 0;
       }
     }
-    if ((count_Top_Press >= 5) or (count_Top_Time >= 14000)) {
+    if ((count_Top_Press >= 5) or (count_Top_Time >= 15000)) {
       Top = true;
     }
     if (Top) {
@@ -385,7 +375,7 @@ void loop() {
         Serial.println("Loging Start");
         Logtime = 0;
       }
-      if (count_Log >= 500) {
+      if (count_Log >= 100) {
         for (uint8_t i = 0; i <= 3; i++) {
           Flash_Write[Log_Point * 16 + i] = Logtime >> ((3 - i) * 8);
         }
@@ -409,6 +399,8 @@ void loop() {
     }
     if (!Log and Log_Prev) {
       Serial.println("Loging Stop");
+      uint8_t Flash_Write[256] = {Flash_Address >> 24, Flash_Address >> 16, Flash_Address >> 8, Flash_Address};
+      flash.write(0x000, Flash_Write);
       Logtime = 0;
     }
   }
@@ -429,6 +421,18 @@ void loop() {
     digitalWrite(MIN1, LOW);
     digitalWrite(MIN2, LOW);
     digitalWrite(LED, LOW);
+  }
+  if (count_CAN >= 1000) {
+    CAN.sendData(0x120, Rot_Data, 6);
+    CAN.sendData(0x11a, Acc_Data, 6);
+    CAN.sendData(0x10a, Press_Data, 3);
+    count_CAN = 0;
+  }
+  if (Liftoff and !Liftoff_Prev) {
+    CAN.sendData(0x110, Send_Liftoff, 1);
+  }
+  if (Top and !Top_Prev) {
+    CAN.sendData(0x12a, Send_Top, 1);
   }
   Standby_Prev = Standby;
   Liftoff_Prev = Liftoff;
