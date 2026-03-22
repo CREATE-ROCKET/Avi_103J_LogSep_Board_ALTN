@@ -17,7 +17,7 @@
 #define ICM_CS 8
 #define Flash_CS 15
 
-#define SPI_FREQ 12000000
+#define SPI_FREQ 6000000
 #define LPS_WAI 0xBD
 #define ICM_WAI 0x47
 
@@ -64,6 +64,7 @@ uint32_t Press_Read = 0;
 int16_t Acc_x_Read = 0;
 int16_t Acc_y_Read = 0;
 int16_t Acc_z_Read = 0;
+uint8_t Status_Read = 0;
 uint8_t Send_Liftoff[1] = {1};
 uint8_t Send_Top[1] = {1};
 uint32_t Logtime = 0;
@@ -75,7 +76,7 @@ hw_timer_t *timer = NULL;
 CAN_CREATE CAN(true);
 
 can_setting_t can_setting = {
-  .baudRate = (long)100E3,
+  .baudRate = (long)125E3,
   .multiData_send = true,
   .filter_config = CAN_FILTER_DEFAULT,
 };
@@ -211,9 +212,6 @@ void setup() {
 }
 
 void loop() {
-  uint8_t Rot_Data[6] = {(uint8_t)(ICM_data[4] >> 8), (uint8_t)ICM_data[4], (uint8_t)(ICM_data[5] >> 8), (uint8_t)ICM_data[5], (uint8_t)(ICM_data[6] >> 8), (uint8_t)ICM_data[6]};
-  uint8_t Acc_Data[6] = {(uint8_t)(ICM_data[1] >> 8), (uint8_t)ICM_data[1], (uint8_t)(ICM_data[2] >> 8), (uint8_t)ICM_data[2], (uint8_t)(ICM_data[3] >> 8), (uint8_t)ICM_data[3]};
-  uint8_t Press_Data[3] = {LPS_data[0], LPS_data[1], LPS_data[2]};
   if (CAN.available()) {
     can_return_t Data;
     if (CAN.readWithDetail(&Data)){
@@ -289,6 +287,7 @@ void loop() {
           Acc_x_Read = (int16_t)(Flash_Read[j * 16 + 7] << 8 + Flash_Read[j * 16 + 8]);
           Acc_y_Read = (int16_t)(Flash_Read[j * 16 + 9] << 8 + Flash_Read[j * 16 + 10]);
           Acc_z_Read = (int16_t)(Flash_Read[j * 16 + 11] << 8 + Flash_Read[j * 16 + 12]);
+          Status_Read = Flash_Read[j * 16 + 13];
           Serial.print((uint32_t)Logtime_Read);
           Serial.print(",");
           Serial.print((uint32_t)Press_Read);
@@ -298,6 +297,8 @@ void loop() {
           Serial.print((int16_t)Acc_y_Read);
           Serial.print(",");
           Serial.println((int16_t)Acc_z_Read);
+          Serial.print(",");
+          Serial.println((uint8_t)Status_Read);
         }
       }
       timerAlarmEnable(timer);
@@ -353,15 +354,15 @@ void loop() {
       if (!Motor_Prev) {
         Serial.println("Motor On");
       }
-      digitalWrite(MIN1, LOW);
-      digitalWrite(MIN2, HIGH);
+      digitalWrite(MIN1, HIGH);
+      digitalWrite(MIN2, LOW);
     }
     if (Motor_Rev) {
       if (!Motor_Rev_Prev) {
         Serial.println("Motor Reverse On");
       }
-      digitalWrite(MIN1, HIGH);
-      digitalWrite(MIN2, LOW);
+      digitalWrite(MIN1, LOW);
+      digitalWrite(MIN2, HIGH);
     }
     if (!(Motor or Motor_Rev)) {
       if (Motor_Prev or Motor_Rev_Prev) {
@@ -369,39 +370,6 @@ void loop() {
       }
       digitalWrite(MIN1, LOW);
       digitalWrite(MIN2, LOW);
-    }
-    if (Log) {
-      if (!Log_Prev) {
-        Serial.println("Loging Start");
-        Logtime = 0;
-      }
-      if (count_Log >= 100) {
-        for (uint8_t i = 0; i <= 3; i++) {
-          Flash_Write[Log_Point * 16 + i] = Logtime >> ((3 - i) * 8);
-        }
-        for (uint8_t i = 4; i <= 6; i++) {
-          Flash_Write[Log_Point * 16 + i] = Press_Data[i - 4];
-        }
-        for (uint8_t i = 7; i <= 12; i++) {
-          Flash_Write[Log_Point * 16 + i] = Acc_Data[i - 7];
-        }
-        for (uint8_t i = 13; i <= 15; i++) {
-          Flash_Write[Log_Point * 16 + i] = 0;
-        }
-        Log_Point++;
-        if (Log_Point == 16) {
-          flash.write(Flash_Address, Flash_Write);
-          Flash_Address += 0x100;
-          Log_Point = 0;
-        }
-        count_Log = 0;
-      }
-    }
-    if (!Log and Log_Prev) {
-      Serial.println("Loging Stop");
-      uint8_t Flash_Write[256] = {Flash_Address >> 24, Flash_Address >> 16, Flash_Address >> 8, Flash_Address};
-      flash.write(0x000, Flash_Write);
-      Logtime = 0;
     }
   }
   else {
@@ -421,6 +389,45 @@ void loop() {
     digitalWrite(MIN1, LOW);
     digitalWrite(MIN2, LOW);
     digitalWrite(LED, LOW);
+  }
+  uint8_t Rot_Data[6] = {(uint8_t)(ICM_data[4] >> 8), (uint8_t)ICM_data[4], (uint8_t)(ICM_data[5] >> 8), (uint8_t)ICM_data[5], (uint8_t)(ICM_data[6] >> 8), (uint8_t)ICM_data[6]};
+  uint8_t Acc_Data[6] = {(uint8_t)(Acc_x_Avr >> 8), (uint8_t)Acc_x_Avr, (uint8_t)(Acc_y_Avr >> 8), (uint8_t)Acc_y_Avr, (uint8_t)(Acc_z_Avr >> 8), (uint8_t)Acc_z_Avr};
+  uint8_t Press_Data[3] = {(uint8_t)(Press_Avr >> 16), (uint8_t)(Press_Avr >> 8), (uint8_t)Press_Avr};
+  if (Log) {
+    if (!Log_Prev) {
+      Serial.println("Loging Start");
+      Logtime = 0;
+    }
+    if (count_Log >= 200) {
+      for (uint8_t i = 0; i <= 3; i++) {
+        Flash_Write[Log_Point * 16 + i] = Logtime >> ((3 - i) * 8);
+      }
+      for (uint8_t i = 4; i <= 6; i++) {
+        Flash_Write[Log_Point * 16 + i] = Press_Data[i - 4];
+      }
+      for (uint8_t i = 7; i <= 12; i++) {
+        Flash_Write[Log_Point * 16 + i] = Acc_Data[i - 7];
+      }
+      Flash_Write[Log_Point * 16 + 13] = 1 * Standby;
+      Flash_Write[Log_Point * 16 + 13] += 2 * Liftoff;
+      Flash_Write[Log_Point * 16 + 13] += 4 * Top;
+      for (uint8_t i = 14; i <= 15; i++) {
+        Flash_Write[Log_Point * 16 + i] = 0;
+      }
+      Log_Point++;
+      if (Log_Point == 16) {
+        flash.write(Flash_Address, Flash_Write);
+        Flash_Address += 0x100;
+        Log_Point = 0;
+      }
+      count_Log = 0;
+    }
+  }
+  if (!Log and Log_Prev) {
+    Serial.println("Loging Stop");
+    uint8_t Flash_Write[256] = {Flash_Address >> 24, Flash_Address >> 16, Flash_Address >> 8, Flash_Address};
+    flash.write(0x000, Flash_Write);
+    Logtime = 0;
   }
   if (count_CAN >= 1000) {
     CAN.sendData(0x120, Rot_Data, 6);
