@@ -425,7 +425,7 @@ void loop() {
   }
   if (!Log and Log_Prev) {
     Serial.println("Loging Stop");
-    uint8_t Flash_Write[256] = {Flash_Address >> 24, Flash_Address >> 16, Flash_Address >> 8, Flash_Address};
+    uint8_t Flash_Write[256] = {(uint8_t)(Flash_Address >> 24), (uint8_t)(Flash_Address >> 16), (uint8_t)(Flash_Address >> 8), (uint8_t)Flash_Address};
     flash.write(0x000, Flash_Write);
     Logtime = 0;
   }
