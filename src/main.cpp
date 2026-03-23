@@ -94,15 +94,15 @@ IRAM_ATTR void counter() {
     if (count_LPS == 200) {
       Press_Avr = Press_Avr_Temp / 5;
       if (Standby) {
-        Press_Avr_Delta = Press_Avr - Press_Avr_Prev;
-        if (Press_Avr_Delta * 10 <= -4096) {
+        Press_Avr_Delta = (Press_Avr * 100 - Press_Avr_Prev * 100) / 4096;
+        if (Press_Avr_Delta <= -10) {
           count_Liftoff_Press++;
         }
         else {
           count_Liftoff_Press = 0;
         }
         if (Liftoff) {
-          if (Press_Avr >= Press_Avr_Prev) {
+          if (Press_Avr_Delta >= 0) {
             count_Top_Press++;
           }
           else{
@@ -347,7 +347,7 @@ void loop() {
         count_LED = 0;
       }
     }
-    if (count_Motor >= 2500) {
+    if (count_Motor >= 3000) {
       Motor = false;
       Motor_Rev = false;
       count_Motor = 0;
