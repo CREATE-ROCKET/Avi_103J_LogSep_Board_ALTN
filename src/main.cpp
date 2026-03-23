@@ -65,8 +65,7 @@ int16_t Acc_x_Read = 0;
 int16_t Acc_y_Read = 0;
 int16_t Acc_z_Read = 0;
 uint8_t Status_Read = 0;
-uint8_t Send_Liftoff[1] = {1};
-uint8_t Send_Top[1] = {1};
+uint8_t CAN_Send[1] = {1};
 uint32_t Logtime = 0;
 uint8_t Log_Point = 0;
 uint32_t Flash_Address = 0x100;
@@ -240,6 +239,9 @@ void loop() {
     }
     if (Data.id == 0x01e) {
       Log = false;
+    }
+    if (Data.id == 0x300) {
+      CAN.sendData(0x301, CAN_Send, 1);
     }
   }
   if (Serial.available()) {
@@ -436,10 +438,10 @@ void loop() {
     count_CAN = 0;
   }
   if (Liftoff and !Liftoff_Prev) {
-    CAN.sendData(0x110, Send_Liftoff, 1);
+    CAN.sendData(0x110, CAN_Send, 1);
   }
   if (Top and !Top_Prev) {
-    CAN.sendData(0x12a, Send_Top, 1);
+    CAN.sendData(0x12a, CAN_Send, 1);
   }
   Standby_Prev = Standby;
   Liftoff_Prev = Liftoff;
