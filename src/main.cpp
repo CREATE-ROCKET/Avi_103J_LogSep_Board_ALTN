@@ -125,7 +125,7 @@ IRAM_ATTR void counter() {
       Acc_y_Avr = Acc_y_Avr_Temp / 20;
       Acc_z_Avr = Acc_z_Avr_Temp / 20;
       if (Standby) {
-        Acc_Avr_Abs = (Acc_x_Avr / 2048) ^ 2 + (Acc_y_Avr / 2048) ^ 2 + (Acc_z_Avr / 2048) ^ 2;
+        Acc_Avr_Abs = ((int32_t)Acc_x_Avr * (int32_t)Acc_x_Avr + (int32_t)Acc_y_Avr * (int32_t)Acc_y_Avr + (int32_t)Acc_z_Avr * (int32_t)Acc_z_Avr) >> 22;
         if (Acc_Avr_Abs >= 4) {
           count_Liftoff_Acc++;
         }
