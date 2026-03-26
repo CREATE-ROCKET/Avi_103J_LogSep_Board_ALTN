@@ -222,14 +222,14 @@ void loop() {
     if (Data.id == 0x005) {
       Standby = true;
     }
-    if (Data.id == 0x00d) {
+    /*if (Data.id == 0x00d) {
       Motor = true;
       Motor_Rev = false;
     }
     if (Data.id == 0x00f) {
       Motor_Rev = true;
       Motor = false;
-    }
+    }*/
     if (Data.id == 0x003) {
       Motor = false;
       Motor_Rev = false;
@@ -253,14 +253,14 @@ void loop() {
     if (cmd == 's') {
       Standby = true;
     }
-    if (cmd == 'p') {
+    /*if (cmd == 'p') {
       Motor = true;
       Motor_Rev = false;
     }
     if (cmd == 'r') {
       Motor_Rev = true;
       Motor = false;
-    }
+    }*/
     if (cmd == 'a') {
       Motor = false;
       Motor_Rev = false;
